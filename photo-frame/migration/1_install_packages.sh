@@ -27,7 +27,7 @@ sudo apt-get install -y \
     xwayland labwc wlr-randr \
     vlc ffmpeg imagemagick \
     wireguard rsync smbclient rclone \
-    inotify-tools libgpiod2 bc btop \
+    inotify-tools libgpiod3 bc btop \
     locales resolvconf \
     mosquitto mosquitto-clients \
     samba

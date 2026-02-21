@@ -24,7 +24,7 @@ sudo apt install -y \
     libsdl2-dev libsdl2-image-2.0-0 libsdl2-mixer-2.0-0 libsdl2-ttf-2.0-0 \
     locales \
     wireguard rsync \
-    inotify-tools imagemagick libgpiod2 smbclient rclone samba mosquitto mosquitto-clients bc \
+    inotify-tools imagemagick libgpiod3 smbclient rclone samba mosquitto mosquitto-clients bc \
     vlc btop xwayland labwc wlr-randr
     # xwayland labwc wlr-randr #TODO: [ivan] check if thats needed anyway
 

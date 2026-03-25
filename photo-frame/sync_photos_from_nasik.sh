@@ -33,11 +33,12 @@ if [[ -n "${RCLONE_CONFIG:-}" && -f "$RCLONE_CONFIG" ]]; then
 fi
 
 # --- rclone from NAS/SMB share (Resized already produced elsewhere) ---
-# Source example: nasikphotos:/Photo-Frames/Home/Resized
-SRC="${remote_name}:/Photo-Frames/${PHOTOS_SUBDIR}/Resized"
+# Source example: nasikphotos:/Photo-Frames/Home
+SRC="${remote_name}:/Photo-Frames/${PHOTOS_SUBDIR}"
 
 rclone sync -v "$SRC" "$DEST" \
   --ignore-case-sync \
+  --stats-one-line \
   --copy-links \
   --create-empty-src-dirs \
   --exclude "Thumbs.db" \

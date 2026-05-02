@@ -10,9 +10,14 @@ It also includes automatic SMB backup integration and environment-based configur
 ### `0_backup_setup.sh`
 - Creates a timestamped backup and places an archive on the SMB share.
 
+### `1_install_packages.sh`
+- Installs all required system packages (libsdl2, labwc, wireguard, rclone, samba, etc.).
+- **Run this before** `1_install_picframe_developer_mode.sh`.
+
 ### `1_install_picframe_developer_mode.sh`
 - Installs PicFrame (developer fork) and all dependencies into a Python venv.
 - Sets up Wayland/labwc display stack, systemd user service, sudoers rules.
+- **Requires:** `1_install_packages.sh` to be run first.
 
 ### `2_restore_samba.sh`
 - Restores SMB credentials for both server and client.

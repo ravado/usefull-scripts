@@ -52,9 +52,10 @@ USERNAME, PASSWORD, SMB_CRED_USER, SMB_CRED_PASS
 | Script | Purpose |
 |--------|---------|
 | `0_backup_setup.sh <prefix>` | Backup to SMB share |
-| `1_install_picframe.sh` | Full install (X11-based) |
-| `2_restore_samba.sh` | Configure local Samba |
-| `3_restore_picframe_backup.sh <prefix> latest` | Restore from SMB |
+| `1_install_packages.sh` | System packages |
+| `2_install_picframe.sh` | Install picframe (dev fork, venv, Wayland) |
+| `3_restore_samba.sh` | Configure local Samba |
+| `4_restore_picframe_backup.sh <prefix> latest` | Restore from SMB |
 | `5_configure_photo_sync.sh <prefix>` | Setup rclone sync service |
 | `community_installation.sh` | The way community suggest installing on a fresh device |
 

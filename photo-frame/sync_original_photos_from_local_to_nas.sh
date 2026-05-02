@@ -1,8 +1,17 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Syncs original photos from local Mac to NAS for a specific photo frame.
+#
+# Place photos in the matching subfolder before running:
+#   ~/Desktop/Photos/Home/
+#   ~/Desktop/Photos/Cherednychoks/
+#   ~/Desktop/Photos/Batanovs/
+#
+# Usage: ./sync_original_photos_from_local_to_nas.sh -target {home|batanovs|cherednychoks} [-n]
+
 # --- Configurable paths ---
-LOCAL_PATH="${HOME}/Downloads/Photos"
+LOCAL_BASE="${HOME}/Desktop/Photos"
 NAS_BASE="/Volumes/Photo-Frames"
 LOG_FILE="${HOME}/sync_photos.log"
 
@@ -51,6 +60,7 @@ case "$TARGET" in
     ;;
 esac
 
+LOCAL_PATH="${LOCAL_BASE}/${TARGET_DIR}"
 DEST="${NAS_BASE}/${TARGET_DIR}/Original"
 
 # --- Logging ---
@@ -63,12 +73,15 @@ log "   To:   ${DEST}"
 [[ $DRY_RUN -eq 1 ]] && log "   Mode: Dry-run" || log "   Mode: Live"
 
 # --- Run rsync ---
-RSYNC_OPTS="-avh --delete --itemize-changes --human-readable --info=NAME0,STATS2"
+RSYNC_OPTS="-avh --delete --itemize-changes --human-readable --progress --stats"
 [[ $DRY_RUN -eq 1 ]] && RSYNC_OPTS="$RSYNC_OPTS --dry-run"
 
 START_TS=$(date +%s)
 
-RSYNC_OUTPUT=$(rsync $RSYNC_OPTS "$LOCAL_PATH/" "$DEST/" 2>&1 | tee -a "$LOG_FILE")
+RSYNC_LOG=$(mktemp)
+rsync $RSYNC_OPTS "$LOCAL_PATH/" "$DEST/" 2>&1 | tee -a "$LOG_FILE" "$RSYNC_LOG"
+RSYNC_OUTPUT=$(cat "$RSYNC_LOG")
+rm -f "$RSYNC_LOG"
 
 END_TS=$(date +%s)
 DURATION=$((END_TS - START_TS))

@@ -52,7 +52,7 @@ cat ~/install_progress.txt
 
 **Resume from current step**:
 ```bash
-sudo ./1_install_picframe_developer_mode.sh <username>
+sudo ./2_install_picframe.sh <username>
 ```
 
 The script automatically resumes from the last completed step.
@@ -140,5 +140,5 @@ sudo systemctl disable install_script_service 2>/dev/null
 sudo rm /etc/systemd/system/install_script_service.service 2>/dev/null
 
 # Start fresh
-sudo ./1_install_picframe_developer_mode.sh <username>
+sudo ./2_install_picframe.sh <username>
 ```

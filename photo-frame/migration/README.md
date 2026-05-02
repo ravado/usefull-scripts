@@ -6,7 +6,18 @@
   Raspberry Pi  ·  Wayland/labwc  ·  venv
 ```
 
-Scripts for installing, backing up, and restoring PicFrame on Raspberry Pi (Debian-based).
+Scripts for installing, backing up, and restoring PicFrame on Raspberry Pi.
+**Tested on:** PiOS 64-bit (Debian Trixie) · Raspberry Pi Zero 2W
+
+---
+
+## Quick Start
+
+1. Flash **PiOS 64-bit (Debian Trixie)** to SD card, boot, connect to WiFi, SSH in
+2. Run the [one-liner](#one-liner-install) to download all scripts
+3. Edit `backup.env` with your SMB credentials
+4. Run scripts in order: `./1_install_packages.sh` → `./2_install_picframe.sh` → `./3_restore_samba.sh` → `./4_restore_picframe_backup.sh` → `./5_configure_photo_sync.sh`
+5. Manually apply `configuration.yaml` (paths changed from old install)
 
 ---
 

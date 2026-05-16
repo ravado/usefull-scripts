@@ -50,6 +50,26 @@ SMB_CRED_PASS="your_client_pass"
 
 ---
 
+## Networking Notes
+
+PiOS Trixie's network stack stays as-is — **NetworkManager** handles WiFi/DHCP. We do **not** switch to `systemd-networkd` or `dhcpcd`.
+
+The only network-related package added specifically for WireGuard is **`openresolv`** (line 52 of `1_install_packages.sh`). Reason:
+
+- `wg-quick up wg0` calls `/sbin/resolvconf` to push tunnel DNS settings into the system resolver
+- On Trixie the older `resolvconf` package is gone; `openresolv` provides a drop-in `/sbin/resolvconf` binary
+- Without it, the tunnel either won't come up or won't resolve names through it
+
+If WireGuard DNS issues arise, verify in this order:
+```bash
+which resolvconf                 # should exist (from openresolv)
+sudo wg show                     # tunnel active?
+sudo systemctl status wg-quick@wg0
+cat /etc/resolv.conf             # tunnel DNS should appear when wg0 up
+```
+
+---
+
 ## One-Liner Install
 
 ```bash

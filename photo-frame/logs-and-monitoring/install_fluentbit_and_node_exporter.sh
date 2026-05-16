@@ -1,6 +1,19 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Verbose mode: ON by default — narrates every shell command with a timestamp
+# and line number to the console (stderr). To disable, run with VERBOSE=0.
+#
+# To also persist the trace to a file that survives an SSH drop:
+#   sudo script -q -c "bash install_fluentbit_and_node_exporter.sh" /tmp/install.log
+if [ "${VERBOSE:-1}" = "1" ]; then
+  export PS4='+ [\D{%H:%M:%S}] line ${LINENO}: '
+  set -x
+fi
+
+# Make apt narrate its progress (download/install steps) instead of -qq silence.
+APT_FLAGS="${APT_FLAGS:-}"
+
 # =======================================================
 # Fluent Bit + Node Exporter installer for Raspberry Pi
 # Replaces Grafana Alloy with ~20MB RAM footprint
@@ -24,6 +37,24 @@ log_step()  { echo -e "${GREEN}📦 $1${NC}"; }
 SUDO=""
 if [ "$(id -u)" -ne 0 ]; then
   SUDO="sudo"
+
+  # Pre-flight: prove sudo works and warm the credential cache up-front so
+  # later prompts don't appear mid-install (and don't get visually buried in
+  # xtrace output). With this in place, the rest of the script runs without
+  # interactive sudo prompts as long as the install completes inside the
+  # sudoers timeout (~15 min on most Debian-based systems).
+  if ! command -v sudo >/dev/null 2>&1; then
+    log_error "sudo is required but not installed. Either install sudo, or run this script as root."
+    exit 1
+  fi
+
+  echo ""
+  log_warn "This script needs sudo. You may be asked for your password now."
+  if ! sudo -v; then
+    log_error "sudo authentication failed. Aborting."
+    exit 1
+  fi
+  log_info "sudo credentials cached — install will proceed without further prompts."
 fi
 
 detect_arch() {
@@ -93,7 +124,7 @@ fi
 log_step "Installing Fluent Bit..."
 
 if ! command -v curl &>/dev/null; then
-  $SUDO apt-get update -qq
+  $SUDO apt-get update
   $SUDO apt-get install -y curl
 fi
 
@@ -109,7 +140,7 @@ if ! dpkg -l fluent-bit &>/dev/null; then
   echo "deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/debian/${CODENAME} ${CODENAME} main" | \
     $SUDO tee /etc/apt/sources.list.d/fluent-bit.list >/dev/null
 
-  $SUDO apt-get update -qq
+  $SUDO apt-get update
   $SUDO apt-get install -y fluent-bit
 else
   log_info "Fluent Bit is already installed"
@@ -317,6 +348,10 @@ $SUDO systemctl enable --now node_exporter
 # =======================================================
 # PHASE 7: Verification
 # =======================================================
+
+# Disable command tracing for the rest of the script — from here on we are
+# only printing user-facing summary text, where xtrace lines just add noise.
+set +x
 
 echo ""
 echo "=========================================="

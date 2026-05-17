@@ -593,53 +593,89 @@ INITSERVEOF
 GPU_VGA="$GPU_VGA_PCI_ID"
 GPU_AUDIO="$GPU_AUDIO_PCI_ID"
 
+log() {
+    logger "GPU Hook [\$2]: \$1"
+    echo "\$(date '+%Y-%m-%d %H:%M:%S') [GPU Hook] [\$2] \$1"
+}
+
+unbind_device() {
+    local dev="\$1"
+    local label="\$2"
+    if [ -e /sys/bus/pci/devices/\$dev/driver ]; then
+        local current=\$(readlink /sys/bus/pci/devices/\$dev/driver | awk -F/ '{print \$NF}')
+        log "Unbinding \$label (\$dev) from \$current" "\$3"
+        echo "\$dev" > /sys/bus/pci/devices/\$dev/driver/unbind
+        log "Unbound \$label successfully" "\$3"
+    else
+        log "No driver bound to \$label (\$dev), skipping unbind" "\$3"
+    fi
+}
+
 if [ "\$2" == "pre-start" ]; then
     ############################################################################
     # VM Starting: Bind GPU to vfio-pci for passthrough
     ############################################################################
-    
-    logger "GPU Hook: VM \$1 starting - preparing GPU for passthrough"
-    
+
+    log "VM \$1 starting - preparing GPU for passthrough" "\$2"
+
     # Disable persistence mode to allow unbinding
-    nvidia-smi -i "\$GPU_VGA" --persistence-mode=0 2>/dev/null || true
-    
-    # Unbind from NVIDIA driver
-    echo "\$GPU_VGA" > /sys/bus/pci/devices/\$GPU_VGA/driver/unbind 2>/dev/null || true
-    echo "\$GPU_AUDIO" > /sys/bus/pci/devices/\$GPU_AUDIO/driver/unbind 2>/dev/null || true
-    
+    log "Disabling nvidia persistence mode" "\$2"
+    if nvidia-smi -pm 0; then
+        log "Persistence mode disabled" "\$2"
+    else
+        log "WARNING: Failed to disable persistence mode - unbind may fail" "\$2"
+    fi
+
+    # Unbind both devices from whatever driver currently holds them
+    unbind_device "\$GPU_VGA"   "GPU VGA"   "\$2"
+    unbind_device "\$GPU_AUDIO" "GPU Audio" "\$2"
+
     # Set driver override to vfio-pci
+    log "Setting driver override to vfio-pci" "\$2"
     echo vfio-pci > /sys/bus/pci/devices/\$GPU_VGA/driver_override
     echo vfio-pci > /sys/bus/pci/devices/\$GPU_AUDIO/driver_override
-    
-    # Bind to vfio-pci driver
-    echo "\$GPU_VGA" > /sys/bus/pci/drivers/vfio-pci/bind 2>/dev/null || true
-    echo "\$GPU_AUDIO" > /sys/bus/pci/drivers/vfio-pci/bind 2>/dev/null || true
-    
-    logger "GPU Hook: GPU bound to vfio-pci for VM \$1"
+
+    # Bind to vfio-pci
+    log "Binding GPU VGA to vfio-pci" "\$2"
+    echo "\$GPU_VGA" > /sys/bus/pci/drivers/vfio-pci/bind
+    log "Binding GPU Audio to vfio-pci" "\$2"
+    echo "\$GPU_AUDIO" > /sys/bus/pci/drivers/vfio-pci/bind
+
+    log "GPU VGA driver:   \$(readlink /sys/bus/pci/devices/\$GPU_VGA/driver   | awk -F/ '{print \$NF}')" "\$2"
+    log "GPU Audio driver: \$(readlink /sys/bus/pci/devices/\$GPU_AUDIO/driver | awk -F/ '{print \$NF}')" "\$2"
+    log "GPU ready for passthrough to VM \$1" "\$2"
 
 elif [ "\$2" == "post-stop" ]; then
     ############################################################################
     # VM Stopped: Return GPU to nvidia driver for power management
     ############################################################################
-    
-    logger "GPU Hook: VM \$1 stopped - returning GPU to nvidia driver"
-    
-    # Unbind from vfio-pci
-    echo "\$GPU_VGA" > /sys/bus/pci/devices/\$GPU_VGA/driver/unbind 2>/dev/null || true
-    echo "\$GPU_AUDIO" > /sys/bus/pci/devices/\$GPU_AUDIO/driver/unbind 2>/dev/null || true
-    
-    # Set driver override to nvidia
+
+    log "VM \$1 stopped - returning GPU to nvidia driver" "\$2"
+
+    # Unbind both devices from vfio-pci
+    unbind_device "\$GPU_VGA"   "GPU VGA"   "\$2"
+    unbind_device "\$GPU_AUDIO" "GPU Audio" "\$2"
+
+    # Set driver override to nvidia for VGA, clear for audio
+    log "Setting driver overrides" "\$2"
     echo nvidia > /sys/bus/pci/devices/\$GPU_VGA/driver_override
-    echo "" > /sys/bus/pci/devices/\$GPU_AUDIO/driver_override
-    
-    # Bind to nvidia driver
-    echo "\$GPU_VGA" > /sys/bus/pci/drivers/nvidia/bind 2>/dev/null || true
-    
+    echo ""      > /sys/bus/pci/devices/\$GPU_AUDIO/driver_override
+
+    # Ensure nvidia module is loaded
+    log "Loading nvidia module" "\$2"
+    modprobe nvidia
+
+    # Bind VGA to nvidia
+    log "Binding GPU VGA to nvidia" "\$2"
+    echo "\$GPU_VGA" > /sys/bus/pci/drivers/nvidia/bind
+
     # Re-enable persistence mode for low power state
     sleep 1
-    nvidia-smi -i "\$GPU_VGA" --persistence-mode=1 2>/dev/null || true
-    
-    logger "GPU Hook: GPU returned to nvidia driver with persistence mode enabled"
+    log "Enabling persistence mode" "\$2"
+    nvidia-smi -pm 1
+
+    log "GPU VGA driver: \$(readlink /sys/bus/pci/devices/\$GPU_VGA/driver | awk -F/ '{print \$NF}')" "\$2"
+    log "GPU returned to nvidia driver with persistence mode enabled" "\$2"
 fi
 
 exit 0

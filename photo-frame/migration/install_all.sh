@@ -7,7 +7,7 @@ REPO_URL="https://raw.githubusercontent.com/ravado/usefull-scripts/main/photo-fr
 SCRIPT_DIR="$(pwd)"
 
 # Files to download
-FILES=(env_loader.sh 0_backup_setup.sh 1_install_packages.sh 2_install_picframe.sh 3_restore_samba.sh 4_restore_picframe_backup.sh 5_configure_photo_sync.sh backup.env.example)
+FILES=(env_loader.sh 0_backup_setup.sh 1_install_packages.sh 2_install_picframe.sh 3_restore_samba.sh 4_restore_picframe_backup.sh 5_configure_photo_sync.sh fix_photo_sync_sudoers.sh backup.env.example)
 
 echo "📥 Downloading required scripts..."
 for file in "${FILES[@]}"; do

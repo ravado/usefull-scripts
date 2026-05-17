@@ -31,6 +31,7 @@ Scripts for installing, backing up, and restoring PicFrame on Raspberry Pi.
 | 3 | `3_restore_samba.sh` | Restore SMB server & client credentials |
 | 4 | `4_restore_picframe_backup.sh` | Restore SSH, WireGuard, crontab, picframe_data |
 | 5 | `5_configure_photo_sync.sh` | *(optional)* rclone sync from NAS + daily cron |
+| — | `fix_photo_sync_sudoers.sh` | Remediator for already-deployed frames: installs `/etc/sudoers.d/photo-sync` so the cron-launched `sudo systemctl start photo-sync@*` runs without a password prompt. Run once per frame as `sudo ./fix_photo_sync_sudoers.sh`. |
 
 > Run in order: `1` → `2` → `3` → `4` → `5`
 > `configuration.yaml` and `picframe.service` are **not** auto-restored — apply manually.

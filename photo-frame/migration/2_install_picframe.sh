@@ -45,6 +45,8 @@ add_systemd_service() {
     sudo tee "$SERVICE_FILE" > /dev/null <<EOL
 [Unit]
 Description=Resume install script after reboot
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 ExecStart=$script_path
@@ -76,12 +78,33 @@ reboot_and_resume() {
 
 # Function to check for a working internet connection
 check_internet_connection() {
+  local max_retries=60
+  local attempt=0
+
   log_message "Checking for an active internet connection..."
-  while ! ping -c 1 -W 1 google.com &> /dev/null; do
-    log_message "No internet connection. Retrying in 5 seconds..."
+  while ! ping -c 1 -W 3 1.1.1.1 &> /dev/null; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge "$max_retries" ]; then
+      log_message "❌ ERROR: No internet connection after $max_retries attempts (~5 minutes). Aborting."
+      exit 1
+    fi
+    log_message "No internet connection (attempt $attempt/$max_retries). Retrying in 5 seconds..."
     sleep 5
   done
-  log_message "Internet connection confirmed."
+  log_message "IP connectivity confirmed."
+
+  log_message "Checking DNS resolution..."
+  attempt=0
+  while ! ping -c 1 -W 3 google.com &> /dev/null; do
+    attempt=$((attempt + 1))
+    if [ "$attempt" -ge "$max_retries" ]; then
+      log_message "❌ ERROR: DNS resolution failed after $max_retries attempts. Check /etc/resolv.conf. Aborting."
+      exit 1
+    fi
+    log_message "DNS not resolving (attempt $attempt/$max_retries). Retrying in 5 seconds..."
+    sleep 5
+  done
+  log_message "Internet connection and DNS confirmed."
 }
 
 # Ensure the user has passwordless sudo for specific commands

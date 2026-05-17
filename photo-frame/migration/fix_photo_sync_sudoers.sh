@@ -53,6 +53,12 @@ if ! visudo -cf "$TMP_FILE" >/dev/null; then
   exit 1
 fi
 
+if sudo -n -l -U "$TARGET_USER" 2>/dev/null | grep -qE '\(ALL\)\s*NOPASSWD:\s*ALL'; then
+  echo "ℹ️  Note: $TARGET_USER already has broad 'NOPASSWD: ALL' (likely from RPi Imager / cloud-init)."
+  echo "    The targeted rule below is redundant on this frame, but installing it anyway"
+  echo "    as a safety net for the day you tighten the broad rule."
+fi
+
 install -m 0440 -o root -g root "$TMP_FILE" "$SUDOERS_FILE"
 echo "✅ Installed $SUDOERS_FILE"
 

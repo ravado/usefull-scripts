@@ -112,6 +112,33 @@ echo "   - $SYSTEMD_BASE_PATH"
 echo "🔄 Reloading systemd..."
 sudo systemctl daemon-reload
 
+# === ALLOW PASSWORDLESS `sudo systemctl start photo-sync@*` FOR CRON ===
+# Without this, the cron line below silently fails because `sudo` cannot
+# prompt for a password in a non-interactive cron context.
+SUDOERS_FILE="/etc/sudoers.d/photo-sync"
+echo "🔐 Writing $SUDOERS_FILE (NOPASSWD for photo-sync@*)"
+SUDOERS_TMP="$(mktemp)"
+cat > "$SUDOERS_TMP" <<EOF
+# /etc/sudoers.d/photo-sync
+# Allows photo-sync@<instance>.service to be started from cron without a
+# password. Written by 5_configure_photo_sync.sh.
+${RUN_USER} ALL=(root) NOPASSWD: /bin/systemctl start photo-sync@*, /bin/systemctl start photo-sync.service, /bin/systemctl start photo-sync
+EOF
+if sudo visudo -cf "$SUDOERS_TMP" >/dev/null; then
+  if sudo -n -l -U "$RUN_USER" 2>/dev/null | grep -qE '\(ALL\)\s*NOPASSWD:\s*ALL'; then
+    echo "ℹ️  Note: $RUN_USER already has broad 'NOPASSWD: ALL' (likely from RPi Imager / cloud-init)."
+    echo "    The targeted rule below is redundant on this frame, but installing it anyway"
+    echo "    as a safety net for the day you tighten the broad rule."
+  fi
+  sudo install -m 0440 -o root -g root "$SUDOERS_TMP" "$SUDOERS_FILE"
+  echo "✅ Installed $SUDOERS_FILE"
+else
+  echo "❌ sudoers syntax check failed; aborting"
+  rm -f "$SUDOERS_TMP"
+  exit 1
+fi
+rm -f "$SUDOERS_TMP"
+
 echo
 echo "▶️ Run manually:"
 echo "  sudo systemctl start photo-sync@${INSTANCE}"
@@ -121,7 +148,9 @@ echo "  sudo systemctl start photo-sync"
 echo "  sudo systemctl status photo-sync"
 
 # === ADD/ENSURE CRON JOB FOR THIS INSTANCE (00:00 daily) ===
-CRON_CMD="0 0 * * * /bin/systemctl start photo-sync@${INSTANCE}"
+# `sudo` is required because the user crontab runs as $RUN_USER, and starting
+# a system unit needs root. NOPASSWD is granted by /etc/sudoers.d/photo-sync above.
+CRON_CMD="0 0 * * * sudo /bin/systemctl start photo-sync@${INSTANCE}"
 
 # Use user's crontab; elevate if needed
 if [[ "$(id -un)" == "$RUN_USER" ]]; then
@@ -163,8 +192,8 @@ echo "    crontab -e"
 echo "    ❌ Delete line:"
 echo "    0 1 * * * /home/ivan.cherednychok/Documents/Scripts/PhotoFrame/sync_and_resize_photos.sh >> /home/ivan.cherednychok/picframe/picframe_data/cron_log.txt 2>&1"
 echo
-echo "2️⃣ ➕ Add new cron job for daily sync at midnight: (sudo is important!)"
-echo "    0 0 * * * sudo /bin/systemctl start photo-sync@${INSTANCE}"
+echo "2️⃣ ✅ Daily-sync cron entry already added (00:00) — verify with:"
+echo "    crontab -l | grep photo-sync"
 echo
 echo "3️⃣ 📌 Run a manual sync if needed:"
 echo "    sudo systemctl start photo-sync@${INSTANCE}"

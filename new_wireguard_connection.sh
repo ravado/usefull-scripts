@@ -1,10 +1,10 @@
 #!/bin/bash
+set -euo pipefail
+
 # Configuration
-SERVER_PUB_KEY="PASTE_MIKROTIK_PUBLIC_KEY_HERE"
-SERVER_ENDPOINT="YOUR_ROUTER_PUBLIC_IP"
-SERVER_PORT="13231"
-CLIENT_IP="10.0.0.2/32"
-TUNNEL_NETWORK="10.0.0.0/24"
+CLIENT_IP="10.0.0.91/32"
+DNS_SERVER="10.0.0.1"
+TUNNEL_NETWORK="0.0.0.0/0"
 
 # Generate Client Keys
 PRIV_KEY=$(wg genkey)
@@ -18,9 +18,11 @@ echo ""
 echo "----------------------------------------------------------------"
 echo "2. CLIENT CONFIG (Save to /etc/wireguard/wg0.conf)"
 echo "----------------------------------------------------------------"
+cat <<EOF
 [Interface]
 PrivateKey = $PRIV_KEY
 Address = ${CLIENT_IP%/*}/24
+DNS = $DNS_SERVER
 
 [Peer]
 PublicKey = $SERVER_PUB_KEY

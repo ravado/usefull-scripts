@@ -6,7 +6,7 @@ Personal home lab automation scripts for infrastructure management.
 
 | Directory | Description |
 |-----------|-------------|
-| [photo-frame](./photo-frame/) | Raspberry Pi digital photo frame with sensors and monitoring |
+| [photo-frame](./photo-frame/) | ⚠️ Moved — now lives in the picframe fork at [ravado/picframe](https://github.com/ravado/picframe) (see [`scripts/`](https://github.com/ravado/picframe/tree/main/scripts)) |
 | [proxmox](./proxmox/) | GPU passthrough, backup nodes, VM automation |
 | [stoik-visnyk](./stoik-visnyk/) | Ukrainian Stoicism Telegram bot |
 | [macbook-resurrection](./macbook-resurrection/) | Zorin OS setup for old MacBooks |
